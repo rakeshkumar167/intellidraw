@@ -42,6 +42,24 @@ const GROUP_LABEL_STRIP = 22;
 const EVICT_GAP = 16;
 const EVICT_PASSES = 3;
 
+/** Padded bounding boxes of group members; reused by the app when nodes are dragged. */
+export function computeGroupFrames(
+  groups: Map<string, { id: string; label: string }>,
+  nodes: Map<string, PositionedNode>,
+): GroupFrame[] {
+  const frames: GroupFrame[] = [];
+  for (const [id, group] of groups) {
+    const members = [...nodes.values()].filter((n) => n.group === id);
+    if (members.length === 0) continue;
+    const minX = Math.min(...members.map((n) => n.x)) - GROUP_PAD;
+    const minY = Math.min(...members.map((n) => n.y)) - GROUP_PAD - GROUP_LABEL_STRIP;
+    const maxX = Math.max(...members.map((n) => n.x + n.width)) + GROUP_PAD;
+    const maxY = Math.max(...members.map((n) => n.y + n.height)) + GROUP_PAD;
+    frames.push({ id, label: group.label, x: minX, y: minY, width: maxX - minX, height: maxY - minY });
+  }
+  return frames;
+}
+
 export class SugiyamaLayout implements LayoutEngine {
   layout(graph: Graph): LayoutResult {
     const nodeIds = [...graph.nodes.keys()];
@@ -59,27 +77,7 @@ export class SugiyamaLayout implements LayoutEngine {
       nodes.set(id, { ...node, x: p.x, y: p.y });
     }
 
-    const computeFrames = (): GroupFrame[] => {
-      const frames: GroupFrame[] = [];
-      for (const [id, group] of graph.groups) {
-        const members = [...nodes.values()].filter((n) => n.group === id);
-        if (members.length === 0) continue;
-        const minX = Math.min(...members.map((n) => n.x)) - GROUP_PAD;
-        const minY = Math.min(...members.map((n) => n.y)) - GROUP_PAD - GROUP_LABEL_STRIP;
-        const maxX = Math.max(...members.map((n) => n.x + n.width)) + GROUP_PAD;
-        const maxY = Math.max(...members.map((n) => n.y + n.height)) + GROUP_PAD;
-        frames.push({
-          id,
-          label: group.label,
-          x: minX,
-          y: minY,
-          width: maxX - minX,
-          height: maxY - minY,
-        });
-      }
-      return frames;
-    };
-
+    const computeFrames = () => computeGroupFrames(graph.groups, nodes);
     this.evictFromFrames(nodes, layerOf, computeFrames);
     const groups = computeFrames();
 
