@@ -15,9 +15,31 @@ export function App() {
   const [errors, setErrors] = useState(scene.errors);
   const [renderMs, setRenderMs] = useState<number | null>(null);
 
+  const [paneWidth, setPaneWidth] = useState(400);
+
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const { transform, onBackgroundPointerDown, fit } = useViewport(canvasRef);
+
+  const onSplitterPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      const startX = e.clientX;
+      const startW = paneWidth;
+      const max = Math.min(760, window.innerWidth - 320);
+      const onMove = (ev: PointerEvent) =>
+        setPaneWidth(Math.min(max, Math.max(260, startW + ev.clientX - startX)));
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    },
+    [paneWidth],
+  );
 
   const render = useCallback(() => {
     const start = performance.now();
@@ -98,7 +120,7 @@ export function App() {
       </header>
 
       <main className="workspace">
-        <section className="editor-pane">
+        <section className="editor-pane" style={{ width: paneWidth }}>
           <textarea
             className="editor"
             spellCheck={false}
@@ -123,6 +145,14 @@ export function App() {
             {renderMs !== null && <span>{renderMs.toFixed(1)} ms</span>}
           </footer>
         </section>
+
+        <div
+          className="splitter"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize editor pane"
+          onPointerDown={onSplitterPointerDown}
+        />
 
         <section className="canvas" ref={canvasRef}>
           <DiagramSvg

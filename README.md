@@ -5,6 +5,8 @@ connections in a small text DSL; a deterministic Sugiyama layout engine
 (no AI, no backend) produces a clean, professional diagram with orthogonal
 edge routing, rendered as SVG.
 
+![IntelliDraw rendering the bundled sample](docs/media/screenshot.png)
+
 ## Run
 
 ```bash
@@ -41,6 +43,7 @@ Kafka -> Notifier                # undeclared nodes are auto-created as services
 - **Render Diagram** (or ⌘/Ctrl-Enter in the editor) re-parses and re-lays-out
 - Wheel = zoom (cursor-anchored) · drag background = pan · drag node = move it
   (edges re-route live) · **Fit** recenters
+- Drag the divider between the editor and the canvas to resize the editor pane
 - **Export SVG / PNG** downloads the current diagram (PNG at 2×)
 
 ## Architecture

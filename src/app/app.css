@@ -130,10 +130,24 @@ body {
 .editor-pane {
   display: flex;
   flex-direction: column;
-  width: 400px;
-  min-width: 300px;
-  border-right: 1px solid var(--hairline);
+  flex-shrink: 0;
   background: #fbfaf7;
+}
+
+.splitter {
+  flex-shrink: 0;
+  width: 5px;
+  margin-left: -2px; /* overlap the pane edge so the hit area straddles the border */
+  border-left: 1px solid var(--hairline);
+  cursor: col-resize;
+  touch-action: none;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.splitter:hover,
+.splitter:active {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .editor {
