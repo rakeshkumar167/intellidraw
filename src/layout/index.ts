@@ -170,15 +170,29 @@ export class SugiyamaLayout implements LayoutEngine {
       const frames = computeFrames();
       let moved = false;
       for (const f of frames) {
-        for (const n of nodes.values()) {
-          if (n.group === f.id) continue;
-          if (!rectsIntersect(n, f, EVICT_GAP / 2)) continue;
-          const frameCenter = f.x + f.width / 2;
-          if (n.x + n.width / 2 <= frameCenter) {
-            pushLeft(n, f.x - EVICT_GAP);
-          } else {
-            pushRight(n, f.x + f.width + EVICT_GAP);
-          }
+        const frameCenter = f.x + f.width / 2;
+        const hits = [...nodes.values()].filter(
+          (n) => n.group !== f.id && rectsIntersect(n, f, EVICT_GAP / 2),
+        );
+        // Evict per side in stacking order so evictees never land on each
+        // other: leftward evictions go rightmost-first, each bounded by the
+        // previous one; rightward evictions mirror that.
+        const leftward = hits
+          .filter((n) => n.x + n.width / 2 <= frameCenter)
+          .sort((a, b) => b.x + b.width - (a.x + a.width) || (a.id < b.id ? -1 : 1));
+        let rightBound = f.x - EVICT_GAP;
+        for (const n of leftward) {
+          pushLeft(n, rightBound);
+          rightBound = n.x - NODE_GAP_X;
+          moved = true;
+        }
+        const rightward = hits
+          .filter((n) => n.x + n.width / 2 > frameCenter)
+          .sort((a, b) => a.x - b.x || (a.id < b.id ? -1 : 1));
+        let leftBound = f.x + f.width + EVICT_GAP;
+        for (const n of rightward) {
+          pushRight(n, leftBound);
+          leftBound = n.x + n.width + NODE_GAP_X;
           moved = true;
         }
       }

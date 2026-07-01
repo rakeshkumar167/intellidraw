@@ -197,6 +197,8 @@ body {
   min-width: 0;
   overflow: hidden;
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .canvas:active {
