@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import { parse } from '../dsl/parser';
-import { buildGraph, Graph } from '../graph/model';
+import { buildGraph } from '../graph/model';
 import { SugiyamaLayout } from '../layout/index';
 import { inflate, segmentIntersectsRect } from '../layout/collision';
-import { syntheticGraph } from '../layout/perf.test';
+import { syntheticGraph } from '../layout/synthetic';
 import { RoutedEdge, routeEdges } from './orthogonal';
 
 function route(dsl: string) {
@@ -21,7 +21,7 @@ function expectAxisAligned(e: RoutedEdge) {
   }
 }
 
-function expectNoNodeHits(graph: Graph, layout: ReturnType<SugiyamaLayout['layout']>, edges: RoutedEdge[]) {
+function expectNoNodeHits(layout: ReturnType<SugiyamaLayout['layout']>, edges: RoutedEdge[]) {
   for (const e of edges) {
     for (let i = 1; i < e.points.length; i++) {
       const [a, b] = [e.points[i - 1], e.points[i]];
@@ -89,7 +89,7 @@ describe('routeEdges', () => {
   });
 
   test('no edge segment passes through a non-endpoint node (spec sample)', () => {
-    const { graph, layout, edges } = route(
+    const { layout, edges } = route(
       [
         'component API type=service',
         'component UserService type=service',
@@ -105,7 +105,7 @@ describe('routeEdges', () => {
       ].join('\n'),
     );
     edges.forEach(expectAxisAligned);
-    expectNoNodeHits(graph, layout, edges);
+    expectNoNodeHits(layout, edges);
   });
 
   test('no edge segment passes through a non-endpoint node (synthetic 100)', () => {
@@ -113,7 +113,7 @@ describe('routeEdges', () => {
     const layout = new SugiyamaLayout().layout(graph);
     const edges = routeEdges(graph, layout);
     edges.forEach(expectAxisAligned);
-    expectNoNodeHits(graph, layout, edges);
+    expectNoNodeHits(layout, edges);
   });
 
   test('cyclic edge routes with correct source/target endpoints', () => {
