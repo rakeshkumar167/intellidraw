@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { Graph, GraphEdge, GraphNode } from '../graph/model';
+import { routeEdges } from '../routing/orthogonal';
 import { measureNode } from './measure';
 import { SugiyamaLayout } from './index';
 
@@ -46,13 +47,16 @@ describe('layout performance', () => {
   ];
 
   for (const [n, budgetMs] of cases) {
-    test(`${n} nodes under ${budgetMs}ms`, () => {
+    test(`${n} nodes under ${budgetMs}ms (layout + routing)`, () => {
       const graph = syntheticGraph(n);
-      new SugiyamaLayout().layout(syntheticGraph(50)); // warm up JIT
+      const warm = new SugiyamaLayout().layout(syntheticGraph(50)); // warm up JIT
+      routeEdges(syntheticGraph(50), warm);
       const start = performance.now();
       const layout = new SugiyamaLayout().layout(graph);
+      const edges = routeEdges(graph, layout);
       const elapsed = performance.now() - start;
       expect(layout.nodes.size).toBe(n);
+      expect(edges.length).toBe(graph.edges.length);
       expect(elapsed).toBeLessThan(budgetMs);
     });
   }
