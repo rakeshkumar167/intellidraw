@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { computeGroupFrames } from '../layout/index';
 import { routeEdges } from '../routing/orthogonal';
 import { DiagramSvg } from '../render/DiagramSvg';
+import { downloadPng, downloadSvg } from './exporter';
 import { PipelineResult, renderPipeline } from './pipeline';
 import { SAMPLE_DSL } from './sample';
 import { useNodeDrag } from './useNodeDrag';
@@ -79,10 +80,18 @@ export function App() {
             Fit
           </button>
           <span className="divider" />
-          <button className="btn" data-export="svg" disabled>
+          <button
+            className="btn"
+            disabled={empty}
+            onClick={() => svgRef.current && downloadSvg(svgRef.current, scene.layout)}
+          >
             Export SVG
           </button>
-          <button className="btn" data-export="png" disabled>
+          <button
+            className="btn"
+            disabled={empty}
+            onClick={() => svgRef.current && void downloadPng(svgRef.current, scene.layout)}
+          >
             Export PNG
           </button>
         </div>
