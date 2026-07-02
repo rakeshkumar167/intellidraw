@@ -8,6 +8,15 @@ export const DUMMY_WIDTH = 8;
 
 const REFINE_SWEEPS = 6;
 
+/** Horizontal gap between adjacent nodes, honoring group frame padding. */
+export function gapBetween(a: OrderingNode, b: OrderingNode): number {
+  if (a.group !== undefined && a.group === b.group) return NODE_GAP_X;
+  let gap = NODE_GAP_X;
+  if (a.group !== undefined) gap += GROUP_PAD;
+  if (b.group !== undefined) gap += GROUP_PAD;
+  return gap;
+}
+
 export interface Positioned {
   x: number;
   y: number;
@@ -47,15 +56,6 @@ export function assignCoordinates(
     layerY.push(y);
     y += layerHeights[l] + LAYER_GAP_Y;
   }
-
-  // Horizontal gap between adjacent nodes, honoring group frame padding.
-  const gapBetween = (a: OrderingNode, b: OrderingNode): number => {
-    if (a.group !== undefined && a.group === b.group) return NODE_GAP_X;
-    let gap = NODE_GAP_X;
-    if (a.group !== undefined) gap += GROUP_PAD;
-    if (b.group !== undefined) gap += GROUP_PAD;
-    return gap;
-  };
 
   // e_i: minimal feasible center of node i relative to node 0's center.
   const offsets = layers.map((layer) => {
