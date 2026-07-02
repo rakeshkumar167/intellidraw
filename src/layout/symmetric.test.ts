@@ -6,6 +6,7 @@ import { OrderingNode, OrderingResult } from './ordering';
 import { rectsIntersect } from './collision';
 import { LayoutResult } from './index';
 import { buildPrimaryForest, SymmetricLayout } from './symmetric';
+import { syntheticGraph } from './synthetic';
 
 const onode = (id: string, layer: number): OrderingNode => ({ id, layer, isDummy: false });
 
@@ -169,5 +170,71 @@ describe('SymmetricLayout', () => {
         expect(rectsIntersect(rects[i], rects[j])).toBe(false);
       }
     }
+  });
+
+  test('cyclic input lays out without error and reports reversed edges', () => {
+    const layout = lay('A -> B\nB -> C\nC -> A');
+    expect(layout.nodes.size).toBe(3);
+    expect(layout.reversedEdgeIds.size).toBe(1);
+  });
+
+  test('long edges expose dummy waypoints', () => {
+    const layout = lay('A -> B\nB -> C\nC -> D\nA -> D');
+    const long = layout.dummyWaypoints.get('e3');
+    expect(long).toBeDefined();
+    expect(long!.length).toBe(2);
+  });
+
+  test('group frame contains members; non-members evicted', () => {
+    const layout = lay(
+      [
+        'component API',
+        'group Backend label="Backend" {',
+        'component UserService',
+        'component OrderService',
+        '}',
+        'component Standalone',
+        'API -> UserService',
+        'API -> OrderService',
+        'API -> Standalone',
+      ].join('\n'),
+    );
+    const frame = layout.groups.find((g) => g.id === 'Backend')!;
+    expect(frame).toBeDefined();
+    for (const id of ['UserService', 'OrderService']) {
+      const n = layout.nodes.get(id)!;
+      expect(n.x).toBeGreaterThanOrEqual(frame.x);
+      expect(n.x + n.width).toBeLessThanOrEqual(frame.x + frame.width);
+    }
+    for (const id of ['API', 'Standalone']) {
+      expect(rectsIntersect(layout.nodes.get(id)!, frame)).toBe(false);
+    }
+  });
+
+  test('property: random layered DAGs never overlap', () => {
+    for (const [n, seed] of [
+      [60, 7],
+      [120, 11],
+      [200, 23],
+    ] as const) {
+      const layout = new SymmetricLayout().layout(syntheticGraph(n, seed));
+      const rects = [...layout.nodes.values()];
+      for (let i = 0; i < rects.length; i++) {
+        for (let j = i + 1; j < rects.length; j++) {
+          expect(
+            rectsIntersect(rects[i], rects[j]),
+            `n=${n} seed=${seed}: ${rects[i].id} overlaps ${rects[j].id}`,
+          ).toBe(false);
+        }
+      }
+    }
+  });
+
+  test('perf sanity: 500 synthetic nodes lay out well under a second', () => {
+    const graph = syntheticGraph(500);
+    const start = performance.now();
+    const layout = new SymmetricLayout().layout(graph);
+    expect(layout.nodes.size).toBe(500);
+    expect(performance.now() - start).toBeLessThan(1000);
   });
 });
