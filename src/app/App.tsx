@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { computeGroupFrames } from '../layout/index';
+import { LayoutEngineId, isLayoutEngineId, layoutEngines } from '../layout/engines';
 import { routeEdges } from '../routing/orthogonal';
 import { DiagramSvg } from '../render/DiagramSvg';
 import { downloadPng, downloadSvg } from './exporter';
@@ -9,9 +10,22 @@ import { useNodeDrag } from './useNodeDrag';
 import { useViewport } from './useViewport';
 import './app.css';
 
+const ENGINE_KEY = 'intellidraw.layoutEngine';
+
+function loadEngineId(): LayoutEngineId {
+  try {
+    const stored = localStorage.getItem(ENGINE_KEY);
+    if (isLayoutEngineId(stored)) return stored;
+  } catch {
+    // Storage unavailable (private mode etc.) — fall through to default.
+  }
+  return 'classic';
+}
+
 export function App() {
   const [text, setText] = useState(SAMPLE_DSL);
-  const [scene, setScene] = useState<PipelineResult>(() => renderPipeline(SAMPLE_DSL));
+  const [engineId, setEngineId] = useState<LayoutEngineId>(loadEngineId);
+  const [scene, setScene] = useState<PipelineResult>(() => renderPipeline(SAMPLE_DSL, engineId));
   const [errors, setErrors] = useState(scene.errors);
   const [renderMs, setRenderMs] = useState<number | null>(null);
 
@@ -41,16 +55,32 @@ export function App() {
     [paneWidth],
   );
 
-  const render = useCallback(() => {
-    const start = performance.now();
-    const next = renderPipeline(text);
-    setErrors(next.errors);
-    if (next.errors.length === 0) {
-      setRenderMs(performance.now() - start);
-      setScene(next);
-      fit(next.layout.width, next.layout.height);
-    }
-  }, [text, fit]);
+  const render = useCallback(
+    (id: LayoutEngineId = engineId) => {
+      const start = performance.now();
+      const next = renderPipeline(text, id);
+      setErrors(next.errors);
+      if (next.errors.length === 0) {
+        setRenderMs(performance.now() - start);
+        setScene(next);
+        fit(next.layout.width, next.layout.height);
+      }
+    },
+    [text, fit, engineId],
+  );
+
+  const onEngineChange = useCallback(
+    (id: LayoutEngineId) => {
+      setEngineId(id);
+      try {
+        localStorage.setItem(ENGINE_KEY, id);
+      } catch {
+        // Persistence is best-effort.
+      }
+      render(id);
+    },
+    [render],
+  );
 
   // Fit the initial sample once the canvas has a size.
   useEffect(() => {
@@ -95,12 +125,26 @@ export function App() {
           </div>
         </div>
         <div className="actions">
-          <button className="btn primary" onClick={render} title="⌘⏎">
+          <button className="btn primary" onClick={() => render()} title="⌘⏎">
             Render Diagram
           </button>
           <button className="btn" onClick={() => fit(scene.layout.width, scene.layout.height)}>
             Fit
           </button>
+          <label className="layout-select">
+            Layout
+            <select
+              value={engineId}
+              aria-label="Layout engine"
+              onChange={(e) => onEngineChange(e.target.value as LayoutEngineId)}
+            >
+              {(Object.keys(layoutEngines) as LayoutEngineId[]).map((id) => (
+                <option key={id} value={id}>
+                  {layoutEngines[id].label}
+                </option>
+              ))}
+            </select>
+          </label>
           <span className="divider" />
           <button
             className="btn"

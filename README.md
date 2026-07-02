@@ -45,6 +45,10 @@ Kafka -> Notifier                # undeclared nodes are auto-created as services
   (edges re-route live) · **Fit** recenters
 - Drag the divider between the editor and the canvas to resize the editor pane
 - **Export SVG / PNG** downloads the current diagram (PNG at 2×)
+- **Layout** dropdown switches the placement engine: *Classic* (compact
+  median-based Sugiyama) or *Symmetric* (parents centered over their
+  children, vertical edges wherever alignment allows). The choice is
+  remembered across sessions.
 
 ## Architecture
 
@@ -57,6 +61,8 @@ src/layout/    deterministic Sugiyama pipeline:
                  ordering.ts     barycenter crossing minimization
                                  (group-contiguity constrained)
                  positioning.ts  median coordinate assignment, no overlaps
+                 symmetric.ts    alternative engine: primary-parent tree
+                                 contours + isotonic order repair
                  measure.ts      content-based node sizing (deterministic)
                  collision.ts    rect/segment intersection utilities
                  index.ts        LayoutEngine interface + SugiyamaLayout
