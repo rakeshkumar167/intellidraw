@@ -199,7 +199,18 @@ export function assignSymmetricCoordinates(
   // violators: conflicting stretches collapse to their mean u, which is the
   // closest order- and gap-respecting fit; already-consistent layers (the
   // common case) pass through untouched, preserving exact symmetry.
-  for (const layer of layers) {
+  //
+  // Layers are swept bottom-up (deepest first) so that by the time a layer
+  // is repaired, any of its nodes' forest children (which live strictly one
+  // layer deeper) have already settled into their final, repaired centers.
+  // Each node's *desired* center for PAV purposes is recomputed from those
+  // settled children (midpoint of the outermost two) rather than reused from
+  // the phase-1 placement, so a parent stays re-aimed at its children even
+  // after they move. Childless nodes simply desire their existing center.
+  // When nothing needs repair, a parent's children never move, so desired
+  // equals the phase-1 center and this is a no-op.
+  for (let l = layers.length - 1; l >= 0; l--) {
+    const layer = layers[l];
     if (layer.length === 0) continue;
     const e: number[] = [0];
     for (let i = 1; i < layer.length; i++) {
@@ -210,9 +221,16 @@ export function assignSymmetricCoordinates(
           widthOf(layer[i]) / 2,
       );
     }
+    const desired = layer.map((n) => {
+      const kids = childrenOf.get(n.id);
+      if (kids && kids.length > 0) {
+        return (center.get(kids[0])! + center.get(kids[kids.length - 1])!) / 2;
+      }
+      return center.get(n.id)!;
+    });
     const blocks: { sum: number; count: number }[] = [];
-    layer.forEach((n, i) => {
-      let block = { sum: center.get(n.id)! - e[i], count: 1 };
+    layer.forEach((_n, i) => {
+      let block = { sum: desired[i] - e[i], count: 1 };
       while (blocks.length > 0) {
         const prev = blocks[blocks.length - 1];
         if (prev.sum / prev.count <= block.sum / block.count) break;

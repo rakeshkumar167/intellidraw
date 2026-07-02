@@ -147,4 +147,27 @@ describe('SymmetricLayout', () => {
       expect(n.y + n.height).toBeLessThanOrEqual(layout.height);
     }
   });
+
+  test('order repair keeps gaps, order, and parent midpoints', () => {
+    // Two hubs whose children interleave after crossing minimization, so the
+    // forest packing disagrees with the layer order and PAV must repair it.
+    const layout = lay(
+      'P -> c1\nP -> c2\nQ -> c3\nQ -> c4\nc1 -> Z1\nc4 -> Z1\nc2 -> Z2\nc3 -> Z2',
+    );
+    const mids = ['c1', 'c4', 'c2', 'c3'].map((id) => cx(layout, id));
+    // Crossing-minimized order preserved with real gaps between neighbors.
+    for (let i = 1; i < mids.length; i++) {
+      expect(mids[i]).toBeGreaterThan(mids[i - 1]);
+    }
+    // Parents re-aimed at the exact midpoint of their outermost children,
+    // post-repair.
+    expect(cx(layout, 'P')).toBeCloseTo((cx(layout, 'c1') + cx(layout, 'c2')) / 2, 6);
+    expect(cx(layout, 'Q')).toBeCloseTo((cx(layout, 'c4') + cx(layout, 'c3')) / 2, 6);
+    const rects = [...layout.nodes.values()];
+    for (let i = 0; i < rects.length; i++) {
+      for (let j = i + 1; j < rects.length; j++) {
+        expect(rectsIntersect(rects[i], rects[j])).toBe(false);
+      }
+    }
+  });
 });
