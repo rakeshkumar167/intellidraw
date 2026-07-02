@@ -37,4 +37,23 @@ describe('renderPipeline', () => {
     expect(result.errors).toEqual([]);
     expect(result.layout.nodes.size).toBe(0);
   });
+
+  test('symmetric engine renders the sample overlap-free', () => {
+    const result = renderPipeline(SAMPLE_DSL, 'symmetric');
+    expect(result.errors).toEqual([]);
+    expect(result.layout.nodes.size).toBeGreaterThan(5);
+    const nodes = [...result.layout.nodes.values()];
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        expect(
+          rectsIntersect(nodes[i], nodes[j]),
+          `${nodes[i].id} overlaps ${nodes[j].id}`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  test('engine defaults to classic', () => {
+    expect(renderPipeline(SAMPLE_DSL)).toEqual(renderPipeline(SAMPLE_DSL, 'classic'));
+  });
 });
