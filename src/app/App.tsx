@@ -11,6 +11,7 @@ import { useViewport } from './useViewport';
 import './app.css';
 
 const ENGINE_KEY = 'intellidraw.layoutEngine';
+const engineIds = Object.keys(layoutEngines) as LayoutEngineId[];
 
 function loadEngineId(): LayoutEngineId {
   try {
@@ -131,20 +132,27 @@ export function App() {
           <button className="btn" onClick={() => fit(scene.layout.width, scene.layout.height)}>
             Fit
           </button>
-          <label className="layout-select">
-            Layout
-            <select
-              value={engineId}
-              aria-label="Layout engine"
-              onChange={(e) => onEngineChange(e.target.value as LayoutEngineId)}
-            >
-              {(Object.keys(layoutEngines) as LayoutEngineId[]).map((id) => (
-                <option key={id} value={id}>
+          <div className="layout-toggle">
+            <span>Layout</span>
+            <div className="layout-toggle-track" role="radiogroup" aria-label="Layout engine">
+              <span
+                className="layout-toggle-thumb"
+                style={{ transform: `translateX(${engineIds.indexOf(engineId) * 100}%)` }}
+              />
+              {engineIds.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={engineId === id}
+                  className={`layout-toggle-option${engineId === id ? ' active' : ''}`}
+                  onClick={() => onEngineChange(id)}
+                >
                   {layoutEngines[id].label}
-                </option>
+                </button>
               ))}
-            </select>
-          </label>
+            </div>
+          </div>
           <span className="divider" />
           <button
             className="btn"
